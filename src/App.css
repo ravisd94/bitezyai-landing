@@ -1,0 +1,20 @@
+/* App-specific styles - most styling is handled by Tailwind + index.css */
+
+/* Additional custom utilities if needed */
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Smooth hover effects */
+button,
+select {
+  cursor: pointer;
+}
+
+/* Ensure emojis don't break layout */
+.emoji {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}

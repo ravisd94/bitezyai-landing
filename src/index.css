@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    
+    /* Custom Color Variables */
+    --gradient-pink: #ff6ec7;
+    --gradient-teal: #42f5b3;
+    --gradient-yellow: #ffd166;
+    --deep-purple: #6366f1;
+    --soft-blue: #60a5fa;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    color: #1a1a2e;
+    background-color: #fafbff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+@layer utilities {
+  /* Animation Delay Utilities */
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 0.3s;
+  }
+
+  /* Background Clip Text */
+  .bg-clip-text {
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--gradient-pink), var(--gradient-teal));
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--deep-purple), var(--soft-blue));
+  }
+
+  /* Text Selection */
+  ::selection {
+    background: var(--gradient-pink);
+    color: white;
+  }
+
+  ::-moz-selection {
+    background: var(--gradient-pink);
+    color: white;
+  }
+}
