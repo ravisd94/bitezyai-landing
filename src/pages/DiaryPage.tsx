@@ -9,6 +9,18 @@ export function DiaryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof FOOD_DATABASE>([]);
   const [selectedMealType, setSelectedMealType] = useState<"breakfast" | "lunch" | "dinner" | "snack">("breakfast");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const DAILY_CALORIE_GOAL = 2000;
+  const DAILY_PROTEIN_GOAL = 150;
+  const DAILY_CARBS_GOAL = 200;
+  const DAILY_FATS_GOAL = 70;
+  const DAILY_FIBER_GOAL = 25;
+  const DAILY_SUGAR_GOAL = 50;
+  const DAILY_SODIUM_GOAL = 2300;
+  const DAILY_VITAMIN_C_GOAL = 90;
+  const DAILY_VITAMIN_D_GOAL = 20;
+  const DAILY_CALCIUM_GOAL = 1000;
+  const DAILY_IRON_GOAL = 18;
   
   // Form states
   const [foodName, setFoodName] = useState("");
@@ -24,6 +36,8 @@ export function DiaryPage() {
   const [calcium, setCalcium] = useState("");
   const [iron, setIron] = useState("");
   const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner" | "snack">("breakfast");
+  const [quantity, setQuantity] = useState("1");
+  const [unit, setUnit] = useState<"gm" | "ml" | "count">("count");
 
   // Handle search
   const handleSearch = (query: string) => {
@@ -42,27 +56,32 @@ export function DiaryPage() {
   const addFoodFromSearch = (food: typeof FOOD_DATABASE[0]) => {
     const selectedDateObj = new Date(selectedDate + 'T12:00:00');
     const entryId = crypto.randomUUID();
+    const quantityMultiplier = parseFloat(quantity) || 1;
     const newEntry: FoodEntry = {
       id: entryId,
       name: food.name,
-      calories: food.calories,
-      protein: food.protein,
-      carbs: food.carbs,
-      fats: food.fats,
-      fiber: food.fiber,
-      sugar: food.sugar,
-      sodium: food.sodium,
-      vitaminC: food.vitaminC,
-      vitaminD: food.vitaminD,
-      calcium: food.calcium,
-      iron: food.iron,
+      calories: food.calories * quantityMultiplier,
+      protein: food.protein * quantityMultiplier,
+      carbs: food.carbs * quantityMultiplier,
+      fats: food.fats * quantityMultiplier,
+      fiber: food.fiber * quantityMultiplier,
+      sugar: food.sugar * quantityMultiplier,
+      sodium: food.sodium * quantityMultiplier,
+      vitaminC: food.vitaminC * quantityMultiplier,
+      vitaminD: food.vitaminD * quantityMultiplier,
+      calcium: food.calcium * quantityMultiplier,
+      iron: food.iron * quantityMultiplier,
       meal: selectedMealType,
       timestamp: selectedDateObj,
+      quantity: parseFloat(quantity) || 1,
+      unit: unit,
     };
 
     setEntries([...entries, newEntry]);
     setSearchQuery("");
     setSearchResults([]);
+    setQuantity("1");
+    setUnit("count");
   };
 
   const addEntry = () => {
@@ -72,7 +91,7 @@ export function DiaryPage() {
     }
 
     const selectedDateObj = new Date(selectedDate + 'T12:00:00');
-    const entryId = crypto.randomUUID();
+    const entryId = editingId || crypto.randomUUID();
     const newEntry: FoodEntry = {
       id: entryId,
       name: foodName,
@@ -89,9 +108,18 @@ export function DiaryPage() {
       iron: parseFloat(iron) || 0,
       meal: mealType,
       timestamp: selectedDateObj,
+      quantity: parseFloat(quantity) || 1,
+      unit: unit,
     };
 
-    setEntries([...entries, newEntry]);
+    if (editingId) {
+      // Update existing entry
+      setEntries(entries.map(e => e.id === editingId ? newEntry : e));
+      setEditingId(null);
+    } else {
+      // Add new entry
+      setEntries([...entries, newEntry]);
+    }
     
     // Reset form
     setFoodName("");
@@ -106,11 +134,52 @@ export function DiaryPage() {
     setVitaminD("");
     setCalcium("");
     setIron("");
+    setQuantity("1");
+    setUnit("count");
     setShowAddForm(false);
   };
 
   const deleteEntry = (id: string) => {
     setEntries(entries.filter(entry => entry.id !== id));
+  };
+
+  const editEntry = (entry: FoodEntry) => {
+    setFoodName(entry.name);
+    setCalories(entry.calories.toString());
+    setProtein(entry.protein.toString());
+    setCarbs(entry.carbs.toString());
+    setFats(entry.fats.toString());
+    setFiber(entry.fiber.toString());
+    setSugar(entry.sugar.toString());
+    setSodium(entry.sodium.toString());
+    setVitaminC(entry.vitaminC.toString());
+    setVitaminD(entry.vitaminD.toString());
+    setCalcium(entry.calcium.toString());
+    setIron(entry.iron.toString());
+    setMealType(entry.meal);
+    setQuantity((entry.quantity || 1).toString());
+    setUnit(entry.unit || "count");
+    setEditingId(entry.id);
+    setShowAddForm(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setFoodName("");
+    setCalories("");
+    setProtein("");
+    setCarbs("");
+    setFats("");
+    setFiber("");
+    setSugar("");
+    setSodium("");
+    setVitaminC("");
+    setVitaminD("");
+    setCalcium("");
+    setIron("");
+    setQuantity("1");
+    setUnit("count");
+    setShowAddForm(false);
   };
 
   // Filter entries for selected date
@@ -146,25 +215,38 @@ export function DiaryPage() {
     iron: 0,
   });
 
-  // Calculate last 7 days summary
-  const getLast7DaysSummary = () => {
-    const summaryData = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const dayEntries = entries.filter(entry => {
-        const entryDate = new Date(entry.timestamp).toISOString().split('T')[0];
-        return entryDate === dateStr;
-      });
-      const dayCalories = dayEntries.reduce((sum, e) => sum + e.calories, 0);
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-      summaryData.push({ date: dateStr, dayName, calories: dayCalories });
-    }
-    return summaryData;
+  // Calculate remaining amounts
+  const remainingCalories = Math.max(0, DAILY_CALORIE_GOAL - totals.calories);
+  const remainingProtein = Math.max(0, DAILY_PROTEIN_GOAL - totals.protein);
+  const remainingCarbs = Math.max(0, DAILY_CARBS_GOAL - totals.carbs);
+  const remainingFats = Math.max(0, DAILY_FATS_GOAL - totals.fats);
+  const remainingFiber = Math.max(0, DAILY_FIBER_GOAL - totals.fiber);
+  const remainingSugar = Math.max(0, DAILY_SUGAR_GOAL - totals.sugar);
+  const remainingSodium = Math.max(0, DAILY_SODIUM_GOAL - totals.sodium);
+  const remainingVitaminC = Math.max(0, DAILY_VITAMIN_C_GOAL - totals.vitaminC);
+  const remainingVitaminD = Math.max(0, DAILY_VITAMIN_D_GOAL - totals.vitaminD);
+  const remainingCalcium = Math.max(0, DAILY_CALCIUM_GOAL - totals.calcium);
+  const remainingIron = Math.max(0, DAILY_IRON_GOAL - totals.iron);
+
+
+  // Calculate today for date comparison
+  const today = new Date().toISOString().split('T')[0];
+
+  const handlePrevDate = () => {
+    const prevDate = new Date(selectedDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    setSelectedDate(prevDate.toISOString().split('T')[0]);
   };
 
-  const last7Days = getLast7DaysSummary();
+  const handleNextDate = () => {
+    const nextDate = new Date(selectedDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+    setSelectedDate(nextDate.toISOString().split('T')[0]);
+  };
+
+  const handleToday = () => {
+    setSelectedDate(today);
+  };
 
   const groupedEntries = {
     breakfast: selectedDateEntries.filter(e => e.meal === "breakfast"),
@@ -189,43 +271,48 @@ export function DiaryPage() {
           </p>
         </div>
 
-        {/* Date Picker Section */}
+        {/* Date Navigation Section */}
         <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50 mb-6 animate-fade-in-up">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">📅 Select Date</h3>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:border-pink-400 focus:ring-4 focus:ring-pink-100 transition-all outline-none text-lg font-semibold text-gray-700"
-          />
-        </div>
+          <div className="flex items-center justify-between gap-4">
+            <button
+              onClick={handlePrevDate}
+              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg transition-all transform hover:scale-105"
+            >
+              ← Previous
+            </button>
 
-        {/* Weekly Summary */}
-        <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50 mb-6 animate-fade-in-up animation-delay-100">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">📊 Last 7 Days Summary</h3>
-          <div className="grid grid-cols-7 gap-2">
-            {last7Days.map((day) => (
-              <div 
-                key={day.date}
-                onClick={() => setSelectedDate(day.date)}
-                className={`p-4 rounded-2xl cursor-pointer transition-all transform hover:scale-105 ${
-                  selectedDate === day.date
-                    ? 'bg-gradient-to-br from-pink-500 to-purple-500 text-white shadow-lg'
-                    : 'bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-lg border-2 border-gray-200'
+            <div className="flex-1 flex items-center gap-3 justify-center">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className={`px-8 py-3 font-bold rounded-xl transition-all text-lg border-2 cursor-pointer ${
+                  selectedDate === today
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg border-pink-500'
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
                 }`}
-              >
-                <p className="text-xs font-bold text-center mb-1">{day.dayName}</p>
-                <p className="text-xl font-black text-center">{Math.round(day.calories)}</p>
-                <p className="text-xs text-center opacity-70 mt-1">cal</p>
-              </div>
-            ))}
+              />
+
+              {selectedDate !== today && (
+                <button
+                  onClick={handleToday}
+                  className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:shadow-lg transition-all transform hover:scale-105"
+                >
+                  Jump to Today
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={handleNextDate}
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:shadow-lg transition-all transform hover:scale-105"
+            >
+              Next →
+            </button>
           </div>
         </div>
 
-        {/* Monthly Calendar Moved to Separate Page */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-3xl shadow-xl border-2 border-blue-200 mb-6 animate-fade-in-up animation-delay-200">
-          <p className="text-lg text-gray-700">📅 For a full monthly calendar view of your nutrition data, go to the <span className="font-bold text-blue-600">Calendar</span> page from the navigation menu.</p>
-        </div>
+
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Daily Summary */}
@@ -235,73 +322,199 @@ export function DiaryPage() {
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 🔥 Daily Summary
               </h3>
+              
+              {/* Header Row */}
+              <div className="flex justify-between items-center mb-4 pb-3 border-b-2 border-gray-300">
+                <span className="text-sm font-bold text-gray-700">Nutrient</span>
+                <div className="flex gap-8 text-xs font-bold text-gray-700">
+                  <span className="w-12 text-center">Consumed</span>
+                  <span className="w-12 text-center">Goal</span>
+                  <span className="w-12 text-center">Left</span>
+                </div>
+              </div>
+
               <div className="space-y-4">
-                <div className="bg-gradient-to-br from-pink-50 to-pink-100 p-4 rounded-2xl">
-                  <p className="text-sm text-gray-600 mb-1">Total Calories</p>
-                  <p className="text-3xl font-black text-pink-600">{Math.round(totals.calories)}</p>
+                {/* Calories */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">🔥 Calories (kcal)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-red-600 w-12">{Math.round(totals.calories)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_CALORIE_GOAL}</span>
+                      <span className={remainingCalories < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingCalories < 0 ? "-" : ""}{Math.round(Math.abs(remainingCalories))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-red-400 to-red-600 h-2 rounded-full" style={{ width: `${Math.min((totals.calories / DAILY_CALORIE_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
+                {/* Protein */}
+                <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-gray-700">🍗 Protein</span>
-                    <span className="text-pink-600 font-bold">{Math.round(totals.protein)}g</span>
+                    <span className="text-sm font-semibold text-gray-700">🍗 Protein (g)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-pink-600 w-12">{Math.round(totals.protein)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_PROTEIN_GOAL}</span>
+                      <span className={remainingProtein < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingProtein < 0 ? "-" : ""}{Math.round(Math.abs(remainingProtein))}</span>
+                    </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-pink-400 to-pink-600 h-2 rounded-full" style={{ width: `${Math.min((totals.protein / 150) * 100, 100)}%` }}></div>
+                    <div className="bg-gradient-to-r from-pink-400 to-pink-600 h-2 rounded-full" style={{ width: `${Math.min((totals.protein / DAILY_PROTEIN_GOAL) * 100, 100)}%` }}></div>
                   </div>
+                </div>
 
+                {/* Carbs */}
+                <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-gray-700">🍚 Carbs</span>
-                    <span className="text-purple-600 font-bold">{Math.round(totals.carbs)}g</span>
+                    <span className="text-sm font-semibold text-gray-700">🍚 Carbs (g)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-purple-600 w-12">{Math.round(totals.carbs)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_CARBS_GOAL}</span>
+                      <span className={remainingCarbs < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingCarbs < 0 ? "-" : ""}{Math.round(Math.abs(remainingCarbs))}</span>
+                    </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-purple-400 to-purple-600 h-2 rounded-full" style={{ width: `${Math.min((totals.carbs / 200) * 100, 100)}%` }}></div>
+                    <div className="bg-gradient-to-r from-purple-400 to-purple-600 h-2 rounded-full" style={{ width: `${Math.min((totals.carbs / DAILY_CARBS_GOAL) * 100, 100)}%` }}></div>
                   </div>
+                </div>
 
+                {/* Fats */}
+                <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-gray-700">🥑 Fats</span>
-                    <span className="text-cyan-600 font-bold">{Math.round(totals.fats)}g</span>
+                    <span className="text-sm font-semibold text-gray-700">🥑 Fats (g)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-cyan-600 w-12">{Math.round(totals.fats)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_FATS_GOAL}</span>
+                      <span className={remainingFats < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingFats < 0 ? "-" : ""}{Math.round(Math.abs(remainingFats))}</span>
+                    </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-cyan-400 to-cyan-600 h-2 rounded-full" style={{ width: `${Math.min((totals.fats / 70) * 100, 100)}%` }}></div>
+                    <div className="bg-gradient-to-r from-cyan-400 to-cyan-600 h-2 rounded-full" style={{ width: `${Math.min((totals.fats / DAILY_FATS_GOAL) * 100, 100)}%` }}></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Micronutrients Summary */}
             <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50 animate-fade-in-up animation-delay-300">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 💊 Micronutrients
               </h3>
+              
+              {/* Header Row */}
+              <div className="flex justify-between items-center mb-4 pb-3 border-b-2 border-gray-300">
+                <span className="text-sm font-bold text-gray-700">Nutrient</span>
+                <div className="flex gap-8 text-xs font-bold text-gray-700">
+                  <span className="w-12 text-center">Consumed</span>
+                  <span className="w-12 text-center">Goal</span>
+                  <span className="w-12 text-center">Left</span>
+                </div>
+              </div>
+
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">🌿 Fiber</span>
-                  <span className="font-bold text-green-600">{Math.round(totals.fiber)}g</span>
+                {/* Fiber */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">🌿 Fiber (g)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-green-600 w-12">{Math.round(totals.fiber)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_FIBER_GOAL}</span>
+                      <span className={remainingFiber < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingFiber < 0 ? "-" : ""}{Math.round(Math.abs(remainingFiber))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-green-400 to-green-600 h-1.5 rounded-full" style={{ width: `${Math.min((totals.fiber / DAILY_FIBER_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">🍬 Sugar</span>
-                  <span className="font-bold text-orange-600">{Math.round(totals.sugar)}g</span>
+
+                {/* Sugar */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">🍬 Sugar (g)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-orange-600 w-12">{Math.round(totals.sugar)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_SUGAR_GOAL}</span>
+                      <span className={remainingSugar < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingSugar < 0 ? "-" : ""}{Math.round(Math.abs(remainingSugar))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-orange-400 to-orange-600 h-1.5 rounded-full" style={{ width: `${Math.min((totals.sugar / DAILY_SUGAR_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">🧂 Sodium</span>
-                  <span className="font-bold text-red-600">{Math.round(totals.sodium)}mg</span>
+
+                {/* Sodium */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">🧂 Sodium (mg)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-red-600 w-12">{Math.round(totals.sodium)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_SODIUM_GOAL}</span>
+                      <span className={remainingSodium < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingSodium < 0 ? "-" : ""}{Math.round(Math.abs(remainingSodium))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-red-400 to-red-600 h-1.5 rounded-full" style={{ width: `${Math.min((totals.sodium / DAILY_SODIUM_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">🍊 Vitamin C</span>
-                  <span className="font-bold text-yellow-600">{Math.round(totals.vitaminC)}mg</span>
+
+                {/* Vitamin C */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">🍊 Vitamin C (mg)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-yellow-600 w-12">{Math.round(totals.vitaminC)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_VITAMIN_C_GOAL}</span>
+                      <span className={remainingVitaminC < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingVitaminC < 0 ? "-" : ""}{Math.round(Math.abs(remainingVitaminC))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-1.5 rounded-full" style={{ width: `${Math.min((totals.vitaminC / DAILY_VITAMIN_C_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">☀️ Vitamin D</span>
-                  <span className="font-bold text-yellow-500">{Math.round(totals.vitaminD)}μg</span>
+
+                {/* Vitamin D */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">☀️ Vitamin D (μg)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-yellow-500 w-12">{Math.round(totals.vitaminD)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_VITAMIN_D_GOAL}</span>
+                      <span className={remainingVitaminD < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingVitaminD < 0 ? "-" : ""}{Math.round(Math.abs(remainingVitaminD))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-yellow-300 to-yellow-500 h-1.5 rounded-full" style={{ width: `${Math.min((totals.vitaminD / DAILY_VITAMIN_D_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">🦴 Calcium</span>
-                  <span className="font-bold text-blue-600">{Math.round(totals.calcium)}mg</span>
+
+                {/* Calcium */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">🦴 Calcium (mg)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-blue-600 w-12">{Math.round(totals.calcium)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_CALCIUM_GOAL}</span>
+                      <span className={remainingCalcium < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingCalcium < 0 ? "-" : ""}{Math.round(Math.abs(remainingCalcium))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full" style={{ width: `${Math.min((totals.calcium / DAILY_CALCIUM_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">⚙️ Iron</span>
-                  <span className="font-bold text-gray-600">{Math.round(totals.iron)}mg</span>
+
+                {/* Iron */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">🩸 Iron (mg)</span>
+                    <div className="flex gap-8 text-sm font-bold text-right">
+                      <span className="text-red-600 w-12">{Math.round(totals.iron)}</span>
+                      <span className="text-gray-700 w-12">{DAILY_IRON_GOAL}</span>
+                      <span className={remainingIron < 0 ? "text-red-600 w-12" : "text-green-600 w-12"}>{remainingIron < 0 ? "-" : ""}{Math.round(Math.abs(remainingIron))}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-red-400 to-red-600 h-1.5 rounded-full" style={{ width: `${Math.min((totals.iron / DAILY_IRON_GOAL) * 100, 100)}%` }}></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -311,7 +524,7 @@ export function DiaryPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Search Food */}
             <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50 animate-slide-in-up">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">🔍 Search Food</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">🔍 Search & Add Food</h3>
               <div className="relative">
                 <input
                   type="text"
@@ -347,6 +560,50 @@ export function DiaryPage() {
                     <option value="dinner">🌙 Dinner</option>
                     <option value="snack">🥤 Snack</option>
                   </select>
+                </div>
+              )}
+
+              {/* Meal Type & Quantity Selection for Search */}
+              {searchQuery && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-700">🍽️ Meal Type</label>
+                      <select
+                        value={selectedMealType}
+                        onChange={(e) => setSelectedMealType(e.target.value as "breakfast" | "lunch" | "dinner" | "snack")}
+                        className="w-full p-2 mt-1 border-2 border-gray-200 rounded-xl focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 transition-all outline-none cursor-pointer text-sm"
+                      >
+                        <option value="breakfast">🌅 Breakfast</option>
+                        <option value="lunch">🍽️ Lunch</option>
+                        <option value="dinner">🌙 Dinner</option>
+                        <option value="snack">🥤 Snack</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-700">📏 Quantity</label>
+                      <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        placeholder="1"
+                        step="0.5"
+                        className="w-full p-2 mt-1 border-2 border-gray-200 rounded-xl focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 transition-all outline-none text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-700">📊 Unit</label>
+                      <select
+                        value={unit}
+                        onChange={(e) => setUnit(e.target.value as "gm" | "ml" | "count")}
+                        className="w-full p-2 mt-1 border-2 border-gray-200 rounded-xl focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 transition-all outline-none cursor-pointer text-sm"
+                      >
+                        <option value="count">Count</option>
+                        <option value="gm">Gram</option>
+                        <option value="ml">Milliliter</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -398,9 +655,9 @@ export function DiaryPage() {
             <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="w-full flex items-center justify-between text-2xl font-bold text-gray-800 mb-4 hover:text-purple-600 transition-colors"
+                className="w-full flex items-center justify-between text-xl font-bold text-gray-800 mb-4 hover:text-purple-600 transition-colors"
               >
-                <span>Or Add Manually ➕</span>
+                <span>Add Manually (without searching) ➕</span>
                 <span>{showAddForm ? "✕" : "▼"}</span>
               </button>
 
@@ -429,6 +686,31 @@ export function DiaryPage() {
                       <option value="lunch">🍽️ Lunch</option>
                       <option value="dinner">🌙 Dinner</option>
                       <option value="snack">🥤 Snack</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">📏 Quantity</label>
+                    <input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      placeholder="1"
+                      step="0.5"
+                      className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 transition-all outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">📊 Unit</label>
+                    <select
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value as "gm" | "ml" | "count")}
+                      className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 transition-all outline-none cursor-pointer"
+                    >
+                      <option value="count">Count</option>
+                      <option value="gm">Gram (gm)</option>
+                      <option value="ml">Milliliter (ml)</option>
                     </select>
                   </div>
 
@@ -565,137 +847,199 @@ export function DiaryPage() {
             </div>
 
             {/* Food Entries by Meal */}
-            {selectedDateEntries.length === 0 ? (
-              <div className="bg-white/90 backdrop-blur-lg p-12 rounded-3xl shadow-xl border-2 border-white/50 text-center">
-                <div className="text-6xl mb-4">🍽️</div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">No Entries for {new Date(selectedDate + 'T12:00:00').toLocaleDateString()}</h3>
-                <p className="text-gray-600">
-                  Start tracking your meals for this day by using the search or adding manually!
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Breakfast */}
-                {groupedEntries.breakfast.length > 0 && (
-                  <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      🌅 Breakfast
-                    </h3>
-                    <div className="space-y-3">
-                      {groupedEntries.breakfast.map(entry => (
-                        <div key={entry.id} className="bg-gradient-to-br from-orange-50 to-yellow-50 p-4 rounded-2xl border-2 border-orange-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold text-gray-800">{entry.name}</h4>
+            <div className="space-y-6">
+              {/* Breakfast */}
+              <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">🌅 Breakfast</span>
+                  <span className="text-sm font-semibold bg-orange-100 text-orange-700 px-3 py-1 rounded-full">{groupedEntries.breakfast.length}</span>
+                </h3>
+                {groupedEntries.breakfast.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No breakfast items yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {groupedEntries.breakfast.map(entry => (
+                      <div key={entry.id} className="bg-gradient-to-br from-orange-50 to-yellow-50 p-4 rounded-2xl border-2 border-orange-200 hover:shadow-lg transition-all">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-gray-800">{entry.name}</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              <span className="inline-block bg-orange-100 text-orange-700 px-2 py-0.5 rounded mr-2">{entry.quantity}{entry.unit?.charAt(0)}</span>
+                              <span className="text-red-600 font-semibold">{Math.round(entry.calories)} cal</span>
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => editEntry(entry)}
+                              className="px-3 py-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold rounded-lg transition-all text-sm"
+                              title="Edit"
+                            >
+                              ✎ Edit
+                            </button>
                             <button
                               onClick={() => deleteEntry(entry.id)}
-                              className="text-red-500 hover:text-red-700 font-bold"
+                              className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 font-bold rounded-lg transition-all text-sm"
+                              title="Delete"
                             >
-                              ✕
+                              ✕ Del
                             </button>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                            <div><span className="text-gray-600">Cal:</span> <span className="font-bold">{entry.calories}</span></div>
-                            <div><span className="text-gray-600">P:</span> <span className="font-bold">{entry.protein}g</span></div>
-                            <div><span className="text-gray-600">C:</span> <span className="font-bold">{entry.carbs}g</span></div>
-                            <div><span className="text-gray-600">F:</span> <span className="font-bold">{entry.fats}g</span></div>
-                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Lunch */}
-                {groupedEntries.lunch.length > 0 && (
-                  <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      🍽️ Lunch
-                    </h3>
-                    <div className="space-y-3">
-                      {groupedEntries.lunch.map(entry => (
-                        <div key={entry.id} className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-2xl border-2 border-green-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold text-gray-800">{entry.name}</h4>
-                            <button
-                              onClick={() => deleteEntry(entry.id)}
-                              className="text-red-500 hover:text-red-700 font-bold"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                            <div><span className="text-gray-600">Cal:</span> <span className="font-bold">{entry.calories}</span></div>
-                            <div><span className="text-gray-600">P:</span> <span className="font-bold">{entry.protein}g</span></div>
-                            <div><span className="text-gray-600">C:</span> <span className="font-bold">{entry.carbs}g</span></div>
-                            <div><span className="text-gray-600">F:</span> <span className="font-bold">{entry.fats}g</span></div>
-                          </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Protein:</span> <span className="font-bold text-pink-600">{entry.protein}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Carbs:</span> <span className="font-bold text-purple-600">{entry.carbs}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Fats:</span> <span className="font-bold text-cyan-600">{entry.fats}g</span></div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Dinner */}
-                {groupedEntries.dinner.length > 0 && (
-                  <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      🌙 Dinner
-                    </h3>
-                    <div className="space-y-3">
-                      {groupedEntries.dinner.map(entry => (
-                        <div key={entry.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-2xl border-2 border-blue-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold text-gray-800">{entry.name}</h4>
-                            <button
-                              onClick={() => deleteEntry(entry.id)}
-                              className="text-red-500 hover:text-red-700 font-bold"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                            <div><span className="text-gray-600">Cal:</span> <span className="font-bold">{entry.calories}</span></div>
-                            <div><span className="text-gray-600">P:</span> <span className="font-bold">{entry.protein}g</span></div>
-                            <div><span className="text-gray-600">C:</span> <span className="font-bold">{entry.carbs}g</span></div>
-                            <div><span className="text-gray-600">F:</span> <span className="font-bold">{entry.fats}g</span></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Snacks */}
-                {groupedEntries.snack.length > 0 && (
-                  <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      🥤 Snacks
-                    </h3>
-                    <div className="space-y-3">
-                      {groupedEntries.snack.map(entry => (
-                        <div key={entry.id} className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-2xl border-2 border-purple-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold text-gray-800">{entry.name}</h4>
-                            <button
-                              onClick={() => deleteEntry(entry.id)}
-                              className="text-red-500 hover:text-red-700 font-bold"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                            <div><span className="text-gray-600">Cal:</span> <span className="font-bold">{entry.calories}</span></div>
-                            <div><span className="text-gray-600">P:</span> <span className="font-bold">{entry.protein}g</span></div>
-                            <div><span className="text-gray-600">C:</span> <span className="font-bold">{entry.carbs}g</span></div>
-                            <div><span className="text-gray-600">F:</span> <span className="font-bold">{entry.fats}g</span></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-            )}
+
+              {/* Lunch */}
+              <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">🍽️ Lunch</span>
+                  <span className="text-sm font-semibold bg-green-100 text-green-700 px-3 py-1 rounded-full">{groupedEntries.lunch.length}</span>
+                </h3>
+                {groupedEntries.lunch.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No lunch items yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {groupedEntries.lunch.map(entry => (
+                      <div key={entry.id} className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-2xl border-2 border-green-200 hover:shadow-lg transition-all">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-gray-800">{entry.name}</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded mr-2">{entry.quantity}{entry.unit?.charAt(0)}</span>
+                              <span className="text-red-600 font-semibold">{Math.round(entry.calories)} cal</span>
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => editEntry(entry)}
+                              className="px-3 py-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold rounded-lg transition-all text-sm"
+                              title="Edit"
+                            >
+                              ✎ Edit
+                            </button>
+                            <button
+                              onClick={() => deleteEntry(entry.id)}
+                              className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 font-bold rounded-lg transition-all text-sm"
+                              title="Delete"
+                            >
+                              ✕ Del
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Protein:</span> <span className="font-bold text-pink-600">{entry.protein}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Carbs:</span> <span className="font-bold text-purple-600">{entry.carbs}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Fats:</span> <span className="font-bold text-cyan-600">{entry.fats}g</span></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Dinner */}
+              <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">🌙 Dinner</span>
+                  <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{groupedEntries.dinner.length}</span>
+                </h3>
+                {groupedEntries.dinner.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No dinner items yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {groupedEntries.dinner.map(entry => (
+                      <div key={entry.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-2xl border-2 border-blue-200 hover:shadow-lg transition-all">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-gray-800">{entry.name}</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              <span className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded mr-2">{entry.quantity}{entry.unit?.charAt(0)}</span>
+                              <span className="text-red-600 font-semibold">{Math.round(entry.calories)} cal</span>
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => editEntry(entry)}
+                              className="px-3 py-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold rounded-lg transition-all text-sm"
+                              title="Edit"
+                            >
+                              ✎ Edit
+                            </button>
+                            <button
+                              onClick={() => deleteEntry(entry.id)}
+                              className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 font-bold rounded-lg transition-all text-sm"
+                              title="Delete"
+                            >
+                              ✕ Del
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Protein:</span> <span className="font-bold text-pink-600">{entry.protein}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Carbs:</span> <span className="font-bold text-purple-600">{entry.carbs}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Fats:</span> <span className="font-bold text-cyan-600">{entry.fats}g</span></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Snacks */}
+              <div className="bg-white/90 backdrop-blur-lg p-6 rounded-3xl shadow-xl border-2 border-white/50">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">🥤 Snacks</span>
+                  <span className="text-sm font-semibold bg-purple-100 text-purple-700 px-3 py-1 rounded-full">{groupedEntries.snack.length}</span>
+                </h3>
+                {groupedEntries.snack.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No snack items yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {groupedEntries.snack.map(entry => (
+                      <div key={entry.id} className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-2xl border-2 border-purple-200 hover:shadow-lg transition-all">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-gray-800">{entry.name}</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              <span className="inline-block bg-purple-100 text-purple-700 px-2 py-0.5 rounded mr-2">{entry.quantity}{entry.unit?.charAt(0)}</span>
+                              <span className="text-red-600 font-semibold">{Math.round(entry.calories)} cal</span>
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => editEntry(entry)}
+                              className="px-3 py-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold rounded-lg transition-all text-sm"
+                              title="Edit"
+                            >
+                              ✎ Edit
+                            </button>
+                            <button
+                              onClick={() => deleteEntry(entry.id)}
+                              className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 font-bold rounded-lg transition-all text-sm"
+                              title="Delete"
+                            >
+                              ✕ Del
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Protein:</span> <span className="font-bold text-pink-600">{entry.protein}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Carbs:</span> <span className="font-bold text-purple-600">{entry.carbs}g</span></div>
+                          <div className="bg-white/60 p-2 rounded-lg"><span className="text-gray-600">Fats:</span> <span className="font-bold text-cyan-600">{entry.fats}g</span></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

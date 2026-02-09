@@ -116,53 +116,35 @@ export function WeeklyReportPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Day</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">🔥 Calories</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">👟 Steps</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">😴 Sleep</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">⚖️ Weight</th>
+                <tr className="border-b-2 border-gray-300 bg-gray-50">
+                  <th className="text-left py-4 px-6 font-bold text-gray-800">Day</th>
+                  <th className="text-center py-4 px-6 font-bold text-gray-800">🔥 Calories</th>
+                  <th className="text-center py-4 px-6 font-bold text-gray-800">👟 Steps</th>
+                  <th className="text-center py-4 px-6 font-bold text-gray-800">😴 Sleep</th>
+                  <th className="text-center py-4 px-6 font-bold text-gray-800">⚖️ Weight</th>
                 </tr>
               </thead>
               <tbody>
                 {weeklyData.map((day, idx) => (
-                  <tr key={idx} className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 transition-all">
-                    <td className="py-4 px-4">
-                      <p className="font-semibold text-gray-800">{day.day}</p>
+                  <tr key={idx} className="border-b border-gray-200 hover:bg-pink-50 transition-colors">
+                    <td className="py-4 px-6">
+                      <p className="font-bold text-gray-800">{day.day}</p>
                       <p className="text-xs text-gray-500">{day.date}</p>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <p className="font-bold text-orange-600">{day.calories}</p>
-                      <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-1 overflow-hidden">
-                        <div
-                          className="bg-orange-500 h-full rounded-full"
-                          style={{ width: `${Math.min((day.calories / 2200) * 100, 100)}%` }}
-                        ></div>
-                      </div>
+                    <td className="py-4 px-6 text-center">
+                      <p className="font-bold text-orange-600 text-lg">{day.calories}</p>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <p className="font-bold text-blue-600">{day.steps.toLocaleString()}</p>
-                      <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-1 overflow-hidden">
-                        <div
-                          className="bg-blue-500 h-full rounded-full"
-                          style={{ width: `${Math.min((day.steps / 10000) * 100, 100)}%` }}
-                        ></div>
-                      </div>
+                    <td className="py-4 px-6 text-center">
+                      <p className="font-bold text-blue-600 text-lg">{day.steps.toLocaleString()}</p>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <p className={`font-bold ${day.sleep >= 8 ? 'text-green-600' : 'text-yellow-600'}`}>
+                    <td className="py-4 px-6 text-center">
+                      <p className={`font-bold text-lg ${day.sleep >= 8 ? 'text-green-600' : 'text-yellow-600'}`}>
                         {day.sleep}h
                       </p>
-                      <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-1 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${day.sleep >= 8 ? 'bg-green-500' : 'bg-yellow-500'}`}
-                          style={{ width: `${(day.sleep / 8) * 100}%` }}
-                        ></div>
-                      </div>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <p className="font-bold text-gray-800">{day.weight}</p>
-                      <p className={`text-xs ${idx < weeklyData.length - 1 && weeklyData[idx].weight > weeklyData[idx + 1].weight ? 'text-green-600 font-bold' : 'text-gray-500'}`}>
+                    <td className="py-4 px-6 text-center">
+                      <p className="font-bold text-gray-800 text-lg">{day.weight}</p>
+                      <p className={`text-xs mt-1 ${idx < weeklyData.length - 1 && weeklyData[idx].weight > weeklyData[idx + 1].weight ? 'text-green-600 font-bold' : 'text-gray-500'}`}>
                         {idx < weeklyData.length - 1 && weeklyData[idx].weight > weeklyData[idx + 1].weight ? '↓' : idx < weeklyData.length - 1 && weeklyData[idx].weight < weeklyData[idx + 1].weight ? '↑' : '-'}
                       </p>
                     </td>

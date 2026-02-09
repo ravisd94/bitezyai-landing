@@ -23,4 +23,6 @@ export interface FoodEntry {
   iron: number;
   meal: "breakfast" | "lunch" | "dinner" | "snack";
   timestamp: Date;
+  quantity?: number;
+  unit?: "gm" | "ml" | "count";
 }
