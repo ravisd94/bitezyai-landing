@@ -166,7 +166,6 @@ export function DiaryPage() {
 
   const last7Days = getLast7DaysSummary();
 
-  // Group entries by meal for selected date
   const groupedEntries = {
     breakfast: selectedDateEntries.filter(e => e.meal === "breakfast"),
     lunch: selectedDateEntries.filter(e => e.meal === "lunch"),
@@ -221,6 +220,11 @@ export function DiaryPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Monthly Calendar Moved to Separate Page */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-3xl shadow-xl border-2 border-blue-200 mb-6 animate-fade-in-up animation-delay-200">
+          <p className="text-lg text-gray-700">📅 For a full monthly calendar view of your nutrition data, go to the <span className="font-bold text-blue-600">Calendar</span> page from the navigation menu.</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">

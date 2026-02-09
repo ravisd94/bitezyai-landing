@@ -1,4 +1,4 @@
-export type Page = "home" | "diet-plan" | "calorie-calculator" | "diary";
+export type Page = "dashboard" | "home" | "diet-plan" | "calorie-calculator" | "diary" | "calendar" | "goals" | "sleep" | "nutrition" | "progress" | "weekly-report" | "fasting" | "advertise" | "explore-diet-plans" | "explore-recipes";
 
 export interface CalorieResult {
   bmr: number;
